@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Document</title>
+  <style>
+    html, body, #map-canvas {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+    }
+    #panel {
+        padding:3px;
+        background:#fff;
+        border:1px solid #000;
+    }
+  </style>
+</head>
+<body>
+  <div id="panel">
+    <input id="address" type="textbox" placeholder="Post Code">
+    <input id="submit" type="button" value="Enter">
+  </div>
+  <div id="map-canvas"></div>
+</body>
+  <script src="https://maps.googleapis.com/maps/api/js?v=3&sensor=false&libraries=geometry"></script>
+  <script>
+  function initialize() {
+
+    var geocoder      = new google.maps.Geocoder(),
+        mapOptions    = { zoom: 11,
+                          center: new google.maps.LatLng(51.97812, -2.0559)
+                        },
+        //use only a single marker
+        marker        = new google.maps.Marker(),
+        infowindow    = new google.maps.InfoWindow(),
+
+        map           = new google.maps.Map(document.getElementById('map-canvas'), 
+                                            mapOptions),
+        //store the polygons in an array for iteration
+        polys         = [];       
+        polys[0]      = new google.maps.Polygon({
+                          title:'Cheltenham',
+                          paths: [
+                              new google.maps.LatLng(51.97812,-2.0559),
+                              new google.maps.LatLng(51.93951,-2.17752),
+                              new google.maps.LatLng(51.86102,-2.24559),
+                              new google.maps.LatLng(51.8413,-2.18396),
+                              new google.maps.LatLng(51.79853,-2.12508),
+                              new google.maps.LatLng(51.87543,-1.9687),
+                              new google.maps.LatLng(51.94078,-1.98346), 
+                            ],
+                          map:map
+                        });
+
+        // polys[1]      = new google.maps.Polygon({
+        //                   title:'Cheltenham',
+        //                   paths: [
+        //                       new google.maps.LatLng(51.97812,-2.0559),
+        //                       new google.maps.LatLng(51.93951,-2.17752),
+        //                       new google.maps.LatLng(51.87543,-1.9687),
+        //                       new google.maps.LatLng(51.94078,-1.98346), 
+        //                     ],
+        //                   map:map
+        //                 });
+
+
+        google.maps.event.addListener(marker, 'click', function() {
+          infowindow.open(map,marker);
+        });
+
+        // Add event listener to button.
+        var submit = document.getElementById('submit');
+        submit.addEventListener('click', codeAddress);
+
+        //define the codeAdress-function in the scope of initialize
+        //to be able to access all variables without declaring them global
+        function codeAddress() {
+
+          var address = document.getElementById('address').value;
+          document.getElementById('address').value = '';
+
+          geocoder.geocode( { 'address': address}, function(results, status) {
+            if (status == google.maps.GeocoderStatus.OK) {
+              var position = results[0].geometry.location,
+                  //default-content for infowindow
+                  content  = 'The entry is not in any of the areas';
+              map.setCenter(position);
+
+              marker.setOptions({
+                map:map,
+                animation: google.maps.Animation.DRPOP,
+                position: position
+              });
+
+              for(var i=0;i<polys.length;++i){
+                //check if the latLng is placed within the polygon
+                if(google.maps.geometry.poly.containsLocation(position,polys[i])){
+                  //if it does, update the  content for the infowindow
+                  content = 'The entry is within '+polys[i].title;
+                  //and leave the loop
+                  break;
+                }
+              } 
+              //open the infowindow
+              infowindow.setOptions({
+                    map:map,
+                    position:position,
+                    content:content
+              });
+            } 
+            else {
+              //hide the infowindow
+              infowindow.setMap(null);
+              alert('The input did not return any results');
+            }
+          });
+        }
+  }
+
+  google.maps.event.addDomListener(window, 'load', initialize);
+
+  </script>
+</html>
